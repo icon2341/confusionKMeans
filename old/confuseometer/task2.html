@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>Confuseometer</title>
+        <link rel="stylesheet" type="text/css" href="style.css">
+    </head>
+    <body>
+        <div id="main">
+            <div id="headbox">
+                <h1>Confuseometer</h1>
+                <ul>
+                    <li>
+                        Your task is to rate <b><i>Your confusion over time.</i></b>
+                    </li>
+                    <li>
+                        The buttons below the video now show levels of confusion, from not confused to very confused.
+                    </li>
+                    <li>
+                        The video shows you and your partner solving Task 2. When you are ready, press the "Start" button. Use the bottom buttons to reflect your level of confusion. Press a button <i>whenever your confusion level changes</i>.
+                    </li>
+                    <li>
+                        When the video ends, press "Copy Text" and <b>paste</b> the copied text <i>into the zoom chat</i>.
+                    </li>
+                    <li>
+                        If something goes wrong, feel free to reload the page, which will restart the annotation of this task.
+                    </li>
+                    <li>
+                        When you are sure the copied code from your annotation is in the Zoom chat, you may proceed to the next task.
+                    </li>
+                </ul>
+                </div>
+            <div id="vidbox">
+                <div id="buttons">
+                    <div class="tooltip">
+                        <button id="startButton" onclick="startVid()">
+                            <span class="tooltiptext" id="startTool">Start Tracking</span>
+                            <span id="startText">Start</span>
+                        </button>
+                    </div>
+                    <input type="text" value="(Time Log Goes Here)" id="timeCode">
+                    <div class="tooltip">
+                        <button onclick="copyCode()" onmouseout="toolOut()">
+                            <span class="tooltiptext" id="copyTool">Copy to clipboard</span>
+                            Copy text
+                        </button>
+                    </div>
+                </div>
+                <video id="vid">
+                    <source src="src/task2.webm" type="video/webm">
+                    <source src="src/task2.mp4" type="video/mp4">
+                </video>
+                <div class="radio-bar">
+                    <input type="radio" id="confused_0" name="confusion" value="0" checked>
+                    <label for="confused_0">Not At All Confused</label>
+                    <input type="radio" id="confused_1" name="confusion" value="1">
+                    <label for="confused_1">Slightly Confused</label>
+                    <input type="radio" id="confused_2" name="confusion" value="2">
+                    <label for="confused_2">Very Confused</label>
+                    <input type="radio" id="confused_3" name="confusion" value="3">
+                    <label for="confused_3">Extremely Confused</label>
+                </div>
+            </div>
+            <div id="nextbox">
+                <p>Ready for the next task? Make sure your code is in the Zoom Chat!</p>
+                <a href="task3.html">Next Task</a>
+            </div>
+        </div>
+        <script>
+            // Globals
+            let tracking = false; // Tracking State -- initially off
+            let startTime = -1; // Starting Time in ms since epoch
+            let timeVals = []; // 16bit Time-Value Pairs
+
+            // Radio Button Event Handlers
+            const radios = Array.from(document.getElementsByName("confusion"));
+            radios.forEach((input) => {input.addEventListener('click',logTime)});
+
+            // Playback video
+            const vid = document.getElementById("vid");
+
+            // Z85 Digits
+            const digits = "0123456789" + 
+                           "abcdefghijklmnopqrstuvwxyz" +
+                           "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + 
+                           ".-:+=^!/*?&<>()[]{}@%$#"
+
+            // Convert a uint32 to 5 Z85 digit chars
+            function binToZ85(num) {
+                return [...Array(5).keys()].map(i => digits.charAt( Math.floor( 
+                    num / (85**i) ) % 85) ).reverse().join("");
+            }
+            
+            // Cat bits of each pair of uint16 in timeVals to make uint32
+            // Expect an extra 0 to be added onto the list to handle odd length
+            function zipCat(list) {
+                console.log(list);
+                const evens = list.slice(0,-1).filter((_,i) => !(i % 2));
+                console.log(evens);
+                const odds = list.filter((_,i) => i % 2);
+                console.log(odds);
+                return [...evens].map((v,i) => parseInt(v) * 2**16 + parseInt(odds[i]))
+            }
+
+            // Copy code from input to clipboard
+            function copyCode() {
+                const copyText = document.getElementById("timeCode");
+                copyText.select();
+                copyText.setSelectionRange(0, 99999);
+                document.execCommand("copy");
+
+                const tooltip = document.getElementById("copyTool");
+                tooltip.innerHTML = "Copied Successfully <span>&#10003;</span>";
+            }
+
+            // Reset ToolTip on Mouse Out
+            function toolOut() {
+                document.getElementById("copyTool").innerHTML = "Copy to clipboard";
+            }
+
+            // Start Video & Tracking
+            function startVid() {
+                const btStart = document.getElementById("startButton");
+                const text = document.getElementById("timeCode");
+                // Log Start Time
+                startTime = Date.now();
+                console.log(binToZ85(startTime));
+                // Disable Start Button
+                btStart.disabled = true;
+                // Begin Tracking
+                tracking = true;
+                text.value = "Tracking...";
+                // Play Video
+                vid.play();
+                // Hide Next Bar
+                document.getElementById("nextbox").style.display = "none";
+                // Set button to default
+                document.getElementById("confused_0").checked = true;
+                document.getElementById("confused_1").checked = false;
+                document.getElementById("confused_2").checked = false;
+                document.getElementById("confused_3").checked = false;
+            }
+            
+            // Finish Tracking & Generate Code
+            vid.onended = () => {
+                const btStart = document.getElementById("startButton");
+                const text = document.getElementById("timeCode");
+                // Print Log
+                const zippedTimes = [startTime, ...zipCat([...timeVals, 0])];
+                text.value = [...zippedTimes].map(n => binToZ85(n)).join("");
+                // Reset Tracking
+                tracking = false;
+                timeVals = [];
+                // Enable Start Button
+                btStart.disabled = false;
+                // Show Next Bar
+                document.getElementById("nextbox").style.display = "block";
+            }
+            
+            // Log Times and Radio Values
+            function logTime() {
+                if (tracking) {
+                    const cT = Math.floor( (Date.now() - startTime) / 100 );
+                    timeVals.push(cT * 4 + parseInt(radios.find(r => r.checked).value));
+                    console.log(cT,radios.find(r => r.checked).value);
+                }
+            }
+
+        </script>
+    </body>
+</html>

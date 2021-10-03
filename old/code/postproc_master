@@ -1,0 +1,299 @@
+#!/usr/bin/env python3
+# Master Post-Process
+# Compile CSV from VID, AUD, TXT into Numpy
+# Skye Rhomberg, Camille Mince
+# 7/20/21
+
+import os
+import glob
+import numpy as np
+import argparse
+import re
+import subprocess
+
+##########################################################################################
+# VID Output Diarization
+
+# d00: 903 person 0, 668 person 1; 
+# d01: 279 person 0, 843 person 1; 
+# d02: 811 person 0, 149 person 1; 
+# d03: 177 person 0, 731 person 1; 
+# d04: 291 person 0, 556 person 1; 
+# d05: TASK2:  998 person 0, 139 person 1, TASK3: 139 person 0, 998 person 1; 
+# d06: 391 person 0, 670 person 1 for task1; swapped for 2 and 3: 670 persono 0, 391 person 1
+# d07: TASK1&2: 913 person 0, 425 person 1; TASK3: 425 person 0, 913 person 1; 
+# d08: TASK1&2: 622 person 0, 305 person 1, TASK3: 305 person 0, 622 person 1; 
+# d09: 833 person 0, 194 person 1
+
+VID_DIARIZE = {
+        'd00' : {'task1' : [903,668], 'task2' : [903,668], 'task3' : [903,668]},
+        'd01' : {'task2' : [279,843], 'task3' : [279,843]},
+        'd02' : {'task1' : [811,149], 'task2' : [811,149], 'task3' : [811,149]},
+        'd03' : {'task2' : [177,731], 'task3' : [177,731]},
+        'd04' : {'task1' : [291,556], 'task2' : [291,556], 'task3' : [291,556]},
+        'd05' : {'task2' : [998,139], 'task3' : [139,998]},
+        'd06' : {'task1' : [391,670], 'task2' : [670,391], 'task3' : [670,391]},
+        'd07' : {'task1' : [913,425], 'task2' : [913,425], 'task3' : [425,913]},
+        'd08' : {'task1' : [622,305], 'task2' : [622,305], 'task3' : [305,622]},
+        'd09' : {'task1' : [833,194], 'task2' : [833,194], 'task3' : [833,194]}
+        }
+
+##########################################################################################
+# Post-Processing
+
+# Extract Current (Task) Directory from path
+t_name = lambda d: d.split('/')[-1]
+# Extract Dialogue from path
+d_name = lambda d: re.search('(d\d{2})',d).group(1) if re.search('(d\d{2})',d) else ''
+# Extract Data Type from path
+d_mode = lambda d: re.search('(vid|aud|txt)',d).group(1)
+# Extract Participant ID from filename
+p_id = lambda f: f.split('/')[-1][:-4]
+
+def vid_to_npy(d_in):
+    '''
+    VID preproc from OpenFace looks like .../taskX/taskX.csv
+    Frames for each participant are interlaced
+    Note that sometimes frames are skipped
+    Pull apart into a numpy array for each participant, throw away extraneous features
+    Only keep frame,faceid,time, AUs
+    Note that some csvs may only have AUs
+    Input:
+    d_in: string. filepath of taskX directory
+    Output:
+    dict of np array. {'p00tXv':[arr.npy],'p01tXv':[arr.npy]} - array for each participant 
+    '''
+    # Files are .../taskX/taskX.csv
+    f_in = np.loadtxt(d_in + '/' + t_name(d_in) + '.csv',skiprows=1,delimiter=',')
+    # Slice down to frame,face_id,timestamp,[AUs],[AU confidences]
+    feature_slice = np.r_[2,679:714] if f_in.shape[1] > 700 else np.r_[2,5:40] 
+    # Return {'p0IDtXv':[arr.npy],'p1IDtXv':[arr.npy]}
+    # Slice by value of column 1 (face_id)
+    return {f'{VID_DIARIZE[d_name(d_in)][t_name(d_in)][i]}t{t_name(d_in)[-1]}v':\
+            f_in[f_in[:,1]==i][:,feature_slice] for i in range(2)}
+
+def aud_to_npy(d_in):
+    '''
+    AUD preproc from openSMILE looks like .../taskX/###.csv
+    Keep everything, possibly reformat frames to match VID
+    Input:
+    d_in: string. filepath of taskX directory
+    Output:
+    list of np array. [p00tXa.npy, p01tXa.npy] - array for each participant 
+    '''
+    # Return {'p0IDtXa':[arr.npy],'p1IDtXa':[arr.npy]}
+    # Slice away first column (name is always unknown)
+    # Also remove final row cuz openSMILE sometimes doubles final frame
+    return {f'{p_id(f)}t{t_name(d_in)[-1]}a':\
+            np.genfromtxt(f,skip_header=1,delimiter=';',usecols=np.arange(1,34))[:-1,:]\
+            for f in glob.glob(f'{d_in}/*.csv')}
+
+
+def txt_to_npy(d_in):
+    '''
+    TXT preproc from {MILLIE'S SCRIPT} looks like .../taskX/###.csv
+    Format currently token,start_time,end_time,[...features...]
+    Smear to match frames of VID, AUD --> frame_time,token,[...features...]
+    Note that punctuation doesn't have start or end times
+    Input:
+    d_in: string. filepath of taskX directory
+    Output:
+    list of np array. [p00tXa.npy, p01tXa.npy] - array for each participant 
+    '''
+    pass
+
+def to_npy(d_in,verbose=False):
+    '''
+    Call proper post_proc on d_in, depending on if it's AUD, VID, or TXT data
+    Input:
+    d_in: string. filepath of taskX directory
+    Output:
+    list of np array. [p00tX$.npy, p01tX$.npy] - array for each participant, $ in a,v,t
+    '''
+    if verbose:
+        print(f'Process {d_in} as {d_mode(d_in)}')
+    return globals()[f'{d_mode(d_in)}_to_npy'](d_in)
+
+##########################################################################################
+# Directory Walking
+
+def walk_to_npy(p_in,d_out,proc_all=False,proc_new=False,proc_these=[],\
+        face=False,smile=False,text=False,verbose=False):
+    '''
+    Walk thru p_in, post_proc and save all .csv files as numpy arrays
+    Input:
+    p_in: string. parent directory to walk
+    d_out: string. name of folder to save everything in
+    face: bool. process output from OpenFace
+    smile: bool. process output from openSMILE
+    text: bool. process output from text preprocess
+    proc_all: bool. process all files if type enabled
+    proc_new: bool. only process files whose output doesn't yet exist (if type enabled)
+    proc_these: list. SESSION PARENT directories to process (e.g. d00, d01, ...)
+    Output:
+    dict. {'d0X' : {'taskX' : {p00tXv:[arr],p01tXv:[arr],p00tXa:[arr],...},taskY:...}...}
+    Each dialogue a dict, each task a list of numpy arrays for A/V/T of each participant
+    '''
+    # Output Dictionary
+    output = {}
+    # Match cmd-line flag to _to_npy mode
+    modes = {'vid':face,'aud':smile,'txt':text}
+    # Walk filetree down from parent p_in
+    for (root,dirs,files) in os.walk(p_in):
+        for d in dirs:
+            # Get full path
+            d_in = os.path.join(root,d)
+            # When to process: in specified -d directories or
+            # Process ALL specified with -a or
+            # Process NEW specified with -n and output npz doesn't exist
+            proc_this = (proc_these and d_name(d_in) in proc_these) or proc_all or\
+                (proc_new and d_name(d_in) and\
+                not os.path.isfile(f'{d_out}/{d_name(d_in)}.npz'))
+            # If we have a taskX directory enabled for processing
+            if 'task' in d and modes[d_mode(d_in)] and proc_this:
+                # Create parent dictionary if it doesn't exist yet
+                if d_name(d_in) not in output:
+                    if verbose:
+                        print(f'Init File {d_name(d_in)}')
+                    output[d_name(d_in)]={}
+                # Call to_npy and put the arrays into output taskX sub-dict
+                if t_name(d_in) in output[d_name(d_in)]:
+                    output[d_name(d_in)][t_name(d_in)].update(to_npy(d_in,verbose))
+                else:
+                    output[d_name(d_in)][t_name(d_in)]=to_npy(d_in,verbose)
+    return output
+
+##########################################################################################
+# Save Output
+
+def save_npzs(postproc_in,d_out,verbose=False):
+    '''
+    Save output of walk_to_npy to a series of .npz files in d_out
+    Take npy files from postproc_in and cat them by participant-task
+    Order: frame_time,VID, AUD, TXT
+    Make sure frame_time is consistent across data types
+    Input:
+    postproc_in: dict. output from walk_to_npy
+    d_out: string. name of folder to save everything in
+    Output:
+    (None)
+    For each dialogue d0X, write a d0X.npz with ###tX.npy for each task-participant
+    '''
+    # For each session which has been processed
+    for d in postproc_in:
+        # Dict of arrays to get saved for given session dXX
+        output = {}
+        # For each task
+        for t in postproc_in[d]:
+            # kvps = [(p00tXa,[arr]),(p00tXt,[arr]),(p00tXv,[arr]),(p01tXa,[arr]),...]
+            kvps = sorted(list(postproc_in[d][t].items()))
+            # Cut in half to make dict entry for each of the two participants
+            halves = {kvps[0][0][:3]:kvps[:len(kvps)//2],
+                    kvps[len(kvps)//2][0][:3]:kvps[len(kvps)//2:]}
+            # Merge arrays for each participant and put final arrays into output
+            output.update({f'{pid}t{t[-1]}':merge(halves[pid],verbose) for pid in halves})
+        # Make the output directory if needed
+        subprocess.run(['mkdir','-p',f'{d_out}'])
+        if verbose:
+            print(f'Saving {d_out}/{d}.npz')
+        # Save output to npz
+        np.savez(f'{d_out}/{d}.npz',**output)
+
+def merge(arrs,verbose=False):
+    '''
+    Merge A/V/T arrays by frame time
+    (assumed col0 of each CSV is timestep)
+    Input:
+    arrs: list. [(###tXa,[arr]),(###tXt,[arr]),(###tXv,[arr])]
+    Output:
+    array. framewise merge of each input array
+    '''
+    # Dictionary of frametime:[features]
+    out_dict = {}
+    tmp_arr = []
+    # Final array for given participant
+    out_arr = []
+    # For each input array (aud,txt,vid)
+    for i, karr in enumerate(arrs):
+        # For each row in array
+        for row in karr[1]:
+            # If that timestep hasn't yet been reached
+            if not row[0] in out_dict:
+                # Fill missing data from earlier arrays with nan, add data from this arr
+                out_dict[row[0]] = sum([[np.nan for c in range(arrs[j][1].shape[1]-1)]\
+                    for j in range(i)],[]) + list(row[1:])
+            else:
+                # Add this arr to row, pad any missing data in between with nan
+                out_dict[row[0]] = out_dict[row[0]] +\
+                    [np.nan]*(sum([arrs[j][1].shape[1]-1\
+                    for j in range(i)])-len(out_dict[row[0]])) + list(row[1:])
+    # Sort to ensure frames in order, convert each row to np array of floats
+    for kvp in sorted(list(out_dict.items())):
+        tmp_arr.append(np.array([kvp[0]]+kvp[1],dtype=np.float64))
+    row_len = max([a.shape[0] for a in tmp_arr])
+    # Fill in missing data from the final array with nan
+    # Create final array
+    for row in tmp_arr:
+        if row.shape[0] < row_len:
+            out_arr.append(np.append(row,[np.nan]*(row_len-row.shape[0])))
+        else:
+            out_arr.append(row)
+    if verbose:
+        print(f'Successfully Merged {",".join([a[0] for a in arrs])}')
+    # Convert list of arrays to one array and return
+    return np.array(out_arr,dtype=np.float64)
+
+##########################################################################################
+# Main Function
+
+def post_proc(p_in,d_out,proc_all=False,proc_new=False,proc_these=[],\
+        face=False,smile=False,text=False,verbose=False):
+    '''
+    Call walk_to_npy with given cmd-line options, then call save_npzs on output
+    Input:
+    p_in: string. parent directory to walk
+    d_out: string. name of folder to save everything in
+    face: bool. process output from OpenFace
+    smile: bool. process output from openSMILE
+    text: bool. process output from text preprocess
+    proc_all: bool. process all files if type enabled
+    proc_new: bool. only process files whose output doesn't yet exist (if type enabled)
+    proc_these: list. SESSION PARENT directories to process (e.g. d00, d01, ...)
+    verbose: bool. enable verbose mode
+    '''
+    save_npzs(walk_to_npy(p_in,d_out,proc_all,proc_new,proc_these,face,smile,text,verbose),d_out,verbose)
+
+##########################################################################################
+# CMD-Line Args
+
+parser = argparse.ArgumentParser(epilog=\
+        'If no process flags set, use all 3 (-fst). Mode default: process ALL (-a)')
+# I/O Roots
+parser.add_argument('p_in', help='Root of source directory (preproc out)')
+parser.add_argument('d_out', help='Root of Output Directory')
+# Process Flags
+parser.add_argument('-f', '--face', action='store_true', help='Process OpenFace Data')
+parser.add_argument('-s', '--smile', action='store_true', help='Process openSMILE Data')
+parser.add_argument('-t', '--text', action='store_true', help='Process Text Data')
+# Modes
+parser.add_argument('-v', '--verbose', action='store_true', help='Verbose Mode')
+to_proc = parser.add_mutually_exclusive_group()
+to_proc.add_argument('-a', '--proc_all', action='store_true', help='Process ALL Files')
+to_proc.add_argument('-n', '--proc_new', action='store_true', help='Process NEW Files')
+# Dirs to Process
+parser.add_argument('-d', '--proc_these', nargs='+', help='Process THESE dirs')
+
+##########################################################################################
+# Main Code
+
+if __name__ == '__main__':
+    # CLI args as dictionary
+    kwargs = vars(parser.parse_args())
+    # If no process flag set, do all 3 processes
+    if not any([kwargs['face'],kwargs['smile'],kwargs['text']]):
+        kwargs['face'], kwargs['smile'], kwargs['text'] = True, True, True
+    # If no process mode set, process all files
+    if not any([kwargs['proc_all'],kwargs['proc_new'],kwargs['proc_these']]):
+        kwargs['proc_all'] = True
+    # Run Processing
+    post_proc(**kwargs)

@@ -1,0 +1,187 @@
+#!/usr/bin/env python3
+# Master Pre-Process Script
+# Run OpenFace, openSMILE, or just WAV convert
+# Over whole raw data directory structure
+# Skye Rhomberg, Camille Mince
+# 7/8/21
+
+import os
+import subprocess
+import argparse
+
+# Absolute Path to openSMILE config file
+#SMILE_CFG = '/media/skye/OS/Users/Skye/Desktop/opensmile/config/is09-13/IS09_emotion.conf'
+SMILE_CFG = '/Users/milliemince1/OpenSmile/opensmile/config/is09-13/IS09_emotion.conf'
+# Frame size (width of window) in seconds
+SMILE_Z = 0.10000
+# Frame time (timestep between frames) in seconds
+SMILE_S = 0.04000
+# Absolute Path to OpenFace exe
+FACE_PATH = '/Users/milliemince1/OpenFace/OpenFace/build/bin/FaceLandmarkVidMulti'
+# Absolute Path to OpenFace vid landing
+FACE_LND = '/Users/milliemince1/OpenFace/OpenFace/vid-landing'
+
+##########################################################################################
+# File Processing
+
+def write_out(f_in,p_out,conv=False,verbose=False):
+    '''
+    Use OpenFace or openSMILE to pre-process A/V into CSV feature file 
+    - and/or -
+    Use FFMpeg to convert M4A to WAV for transcription later
+    Inputs:
+    f_in: string. input filename
+    p_out: string. output directory name
+    conv: bool. do audio conversion with FFMpeg
+    verbose: bool. print stdout to cmd-line rather than log file
+    '''
+    # Filename without extension or parent dirs
+    fname = f_in.split('/')[-1][:-4]
+
+    # Targeted OpenFace/openSMILE commands:
+    # FaceLandmarkVidMulti -f "path/to/input.mp4" -out_dir "path/to/out/dir"
+    # SMILExtract -C "path/to/config.conf" -I "path/to/input.wav" -D "path/to/output.csv"
+    # conv process simply makes a wav and puts it in proper output directory
+    progs = {
+            'mp4' : [
+                ['mkdir','-p',f'{p_out}/{fname}'],
+                ['cp',f'{f_in}',f'{FACE_LND}'],
+                [f'{FACE_PATH}','-f',f'{FACE_LND}/{fname}.mp4',\
+                        '-out_dir',f'{p_out}/{fname}'],
+                ['rm',f'{FACE_LND}/*']
+                ],
+            'm4a' : [
+                ['mkdir','-p',f'{p_out}'],
+                ['ffmpeg','-i',f'{f_in}','-ac','1','-y',f'{f_in[:-4]}.wav'],
+                ['SMILExtract','-C',f'{SMILE_CFG}','-I',f'{f_in[:-4]}.wav',\
+                        '-Z',f'{SMILE_Z}','-S',f'{SMILE_S}','-D',f'{p_out}/{fname}.csv'],
+                ['rm',f'{f_in[:-4]}.wav']
+                ],
+            'conv' : [
+                ['mkdir','-p',f'{p_out.replace("aud","txt")}'],
+                ['ffmpeg','-i',f'{f_in}','-ac','1','-y',f'{f_in[:-4]}.wav'],
+                ['mv',f'{f_in[:-4]}.wav',f'{p_out.replace("aud","txt")}']
+                ],
+            }
+    msgs = {'mp4':'OpenFace','m4a':'openSMILE','conv':'FFMpeg'}
+
+    # Run pre-process program
+    mode = 'conv' if conv else f_in[-3:]
+    print(f'Processing {f_in} with {msgs[mode]}... ',end='',flush=True)
+    # Don't print output if verbose flag not set
+    out = None if verbose else subprocess.PIPE
+    for p in progs[mode]:
+        subprocess.run(p,stdout=out,stderr=out)
+    print('Done')
+
+def proc(f_in,p_out,face=False,smile=False,conv=False,\
+        proc_all=False,proc_new=False,verbose=False):
+    '''
+    Run the correct process on the input if that process is enabled
+    Inputs:
+    f_in: string. input filename
+    p_out: string. output directory name
+    face: bool. do video pre-process with OpenFace
+    smile: bool. do audio pre-process with openSMILE
+    conv: bool. convert to wav for transcription
+    proc_all: bool. process all files if type enabled
+    proc_new: bool. only process files whose output doesn't yet exist (if type enabled)
+    verbose: bool. print stdout to cmd-line rather than log file
+    '''
+    # File Extension
+    ext = f_in[-3:]
+
+    # If processing with OpenFace or openSMILE
+    if face and ext == 'mp4' or smile and ext == 'm4a':
+        # If processing ALL or just NEW and output doesn't exist
+        if proc_all or proc_new and not output_exists(f_in,p_out,ext):
+            write_out(f_in,p_out,False,verbose) 
+    # If converting to WAV for transcription
+    if conv and ext == 'm4a':
+        # If processing ALL or just NEW and output doesn't exist
+        if proc_all or proc_new and not output_exists(f_in,p_out,'conv'):
+            write_out(f_in,p_out,True,verbose)
+
+def output_exists(f_in,p_out,mode):
+    '''
+    Determine if output file for particular process already exists
+    Inputs:
+    f_in: string. input filename
+    p_out: string. output directory name
+    mode: string. mp4, m4a, or conv
+    '''
+    # Filename without extension or parent dirs
+    fname = f_in.split('/')[-1][:-4]
+    exists = {
+            'mp4' : os.path.isdir(os.path.join(p_out,fname)),
+            'm4a' : os.path.isfile(f'{p_out}/{fname}.csv'),
+            'conv': os.path.isfile(f'{p_out.replace("aud","txt")}/{fname}.wav')
+            }
+    return exists[mode]
+
+##########################################################################################
+# Master Processor
+
+def walk_proc(d_raw,d_out,face=False,smile=False,conv=False,\
+        proc_all=False,proc_new=False,proc_these=[],verbose=False):
+    '''
+    Walk the directory structure of raw data,
+    Create output directory with same structure containing pre-process output
+    Process directories, filetypes, as enabled
+    Inputs:
+    d_raw: string. name of raw data directory
+    d_out: string. name of output directory to be created or modified
+    face: bool. do video pre-process with OpenFace
+    smile: bool. do audio pre-process with openSMILE
+    conv: bool. convert to wav for transcription
+    proc_all: bool. process all files if type enabled
+    proc_new: bool. only process files whose output doesn't yet exist (if type enabled)
+    proc_these: list. SESSION PARENT directories to process (e.g. d00, d01, ...)
+    '''
+    # Walk down filetree
+    for (root,dirs,files) in os.walk(d_raw,topdown=True):
+        # When we reach a leaf in tree (i.e. a file)
+        for f in files:
+            # Get full filepath from root of execution
+            f_in = os.path.join(root,f)
+            # Output dir is input path with top-level directory changed
+            p_out = root.replace(d_raw,d_out)
+            # If no dirs specified in proc_these or current dir in proc_these
+            if not proc_these or any(d in root for d in proc_these):
+                # Process file
+                proc(f_in,p_out,face,smile,conv,proc_all,proc_new,verbose)
+
+##########################################################################################
+# Command-Line Arguments
+
+parser = argparse.ArgumentParser(epilog=\
+        'If no use flags set, use all 3 (-fsc). Mode default: process ALL (-a)')
+# I/O Roots
+parser.add_argument('d_raw', help='Root of Raw Data Directory')
+parser.add_argument('d_out', help='Root of Output Directory (must be sibling w/d_raw)')
+# Use Flags
+parser.add_argument('-f', '--face', action='store_true', help='Use OpenFace')
+parser.add_argument('-s', '--smile', action='store_true', help='Use openSMILE')
+parser.add_argument('-c', '--conv', action='store_true', help='Just Convert to WAV')
+# Modes
+parser.add_argument('-v', '--verbose', action='store_true', help='Verbose Mode')
+to_proc = parser.add_mutually_exclusive_group()
+to_proc.add_argument('-a', '--proc_all', action='store_true', help='Process ALL Files')
+to_proc.add_argument('-n', '--proc_new', action='store_true', help='Process NEW Files')
+# Dirs to Process
+parser.add_argument('-d', '--proc_these', nargs='+', help='Process THESE dirs')
+
+##########################################################################################
+# Main
+
+if __name__ == '__main__':
+    # CLI args as dictionary
+    kwargs = vars(parser.parse_args())
+    # If no use flag set, do all 3 processes
+    if not any([kwargs['face'],kwargs['smile'],kwargs['conv']]):
+        kwargs['face'], kwargs['smile'], kwargs['conv'] = True, True, True
+    # If no process mode set, process all files
+    if not any([kwargs['proc_all'],kwargs['proc_new'],kwargs['proc_these']]):
+        kwargs['proc_all'] = True
+    # Run Processing
+    walk_proc(**kwargs)

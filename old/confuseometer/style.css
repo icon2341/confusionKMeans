@@ -1,0 +1,180 @@
+/***************************************************************************************/
+/* Master Styling */
+
+html, body {
+    width: 100%;
+    height: 100%;
+    background-color: lightgray;
+}
+
+html * {
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+}
+
+#main {
+    width: 80%;
+    max-width: 650px;
+    margin: 40px auto;
+}
+
+#headbox {
+    background-color: darkgray;
+    margin: 0 0 20px 0;
+    border-radius: 10px;
+}
+
+#headbox > * {
+    padding: 15px;
+}
+
+#headbox ul {
+    padding-left: 30px;
+}
+
+#buttons {
+    padding: 20px 0 20px 0;
+    margin: auto;
+    width: 100%;
+    border-radius: 10px 10px 0 0;
+}
+
+#buttons button, #buttons input {
+    margin: 0 5px 0 5px;
+    padding: 6px;
+    border: 1px solid;
+    border-radius: 10px;
+}
+
+#buttons button:not(:disabled):hover {
+    background-color: gray;
+}
+
+#timeCode {
+    max-width: 450px;
+    width: 35vw;
+}
+
+#vidbox {
+    background-color: darkgray;
+    text-align: center;
+    border-radius: 10px;
+}
+
+#vid {
+    width: 100%;
+}
+
+#nextbox {
+    margin: 20px 0 0 0; 
+    width: 100%;
+    border-radius: 10px;
+    background-color: darkgray;
+    position: relative;
+    display: none;
+}
+
+#nextbox > * {
+    padding: 15px;
+}
+#nextbox a {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+/***************************************************************************************/
+/* Radio Buttons */
+
+.radio-bar {
+    margin: auto;
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: center;
+}
+
+.radio-bar input[type="radio"] {
+    /* Hide OS Buttons */
+    opacity: 0;
+    position: fixed;
+    width: 0;
+}
+
+.radio-bar label {
+    margin: 10px;
+    border-radius: 50%;
+    border: 1px solid black;
+    width: 7vw;
+    height: 7vw;
+    font-size: 0.75em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.radio-bar label:hover {
+    background-color: gray;
+}
+
+.radio-bar input[type="radio"]:focus + label {}
+
+/* Differentiating Background Color For Radio Options */
+#confused_0:checked + label { background-color: green; }
+#confused_1:checked + label { background-color: yellow; }
+#confused_2:checked + label { background-color: orange; }
+#confused_3:checked + label { background-color: red; }
+
+/***************************************************************************************/
+/* Clipboard Copy Tool-tip */
+
+.tooltip {
+    /* Positioning */
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip .tooltiptext {
+    /* Initially Hidden */
+    visibility: hidden;
+    /* Sizing */
+    width: 140px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    /* Space */
+    border-radius: 6px;
+    padding: 5px;
+    /* Positioning */
+    position: absolute;
+    z-index: 1;
+    bottom: 150%;
+    left: 50%;
+    margin-left: -75px;
+    /* Fade-In */
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.tooltip .tooltiptext::after {
+    content: "";
+    /* Positioining */
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    /* Give appearance of speech bubble */
+    border-width: 5px;
+    border-style: solid;
+    border-color: #555 transparent transparent transparent;
+}
+
+.tooltip:hover .tooltiptext {
+    /* Appear on Hover */
+    visibility: visible;
+    opacity: 1;
+}
+
+/***************************************************************************************/
