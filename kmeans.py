@@ -1,10 +1,22 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas
+import pandas as pd
+import sklearn
 from kneed import KneeLocator
 from sklearn.datasets import make_blobs
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
+from sklearn.model_selection import RepeatedKFold
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import scale
+from sklearn import model_selection
+from sklearn.decomposition import PCA
+from sklearn.linear_model import LinearRegression
+from sklearn.cross_decomposition import PLSRegression, PLSSVD
+from sklearn.metrics import mean_squared_error
+import plotly.express as px
+
 
 # take the data in the csv and convert it into an array
 
@@ -14,16 +26,50 @@ if __name__ == '__main__':
     # open the csv data file (for the first user for now)
     file = open("data/139t2.csv")
 
+    fLabel = []
     features = []
     skipFirst = True
     for line in file:
         if (skipFirst):
+            elements = line.strip().split(',')
+            for element in elements:
+                fLabel.append(element)
             skipFirst = False
             continue
         elements = line.strip().split(',')
         features.append(elements)
 
+    #fLabel.pop(fLabel.index(' curr_sentence_length'))
     #print(features)
+
+    df = pd.read_csv("data/139t2.csv")
+    #scale the data such that mean of zero and std of 1
+    #dataReduced = pca.fit_transform(scale(df))
+
+    fig = px.scatter_matrix(df,dimensions=fLabel, color=" curr_sentence_length")
+
+    fig.update_traces(diagonal_visible = False)
+
+
+    #now apply PCA
+
+    pca = PCA()
+    components = pca.fit_transform(df[fLabel])
+
+    labels = {
+        str(i): f"PC {i + 1} ({var:.1f}%)"
+        for i, var in enumerate(pca.explained_variance_ratio_ * 100)
+    }
+
+    fig = px.scatter_matrix(
+        components,
+        labels=labels,
+        dimensions=range(4),
+        color=df[" curr_sentence_length"]
+    )
+    fig.update_traces(diagonal_visible=False)
+    fig.show()
+
 
     kmeans = KMeans(
         init="random",  # random initial centroid position
@@ -44,34 +90,10 @@ if __name__ == '__main__':
     # the number of iterations required to converged
     numberItter = kmeans.n_iter_
 
-    #add data to frame
-    data_x_long = [i[47] for i in features]
-    data_y_long = [i[2] for i in features]
-
-    data_x = data_x_long[1::4]
-    data_y = data_y_long[1::4]
-
-    df = pandas.DataFrame({'data_x': data_x, 'data_y': data_y})
-
-    print(df.to_string)
-    print(kmeans.cluster_centers_)
 
 
-    plt.scatter(df['data_x'], df['data_y'], c=kmeans.labels_.astype(float)[1::4], s=50, alpha=0.5)
 
-    plt.title("Clustering of the presence of questions vs the furrowed brow")
 
-    plt.ylabel("is_question")
-    plt.xlabel("AU7 Present")
-
-    plt.show()
-    # cen_x = [i[0] for i in finalLoc]
-    # cen_y = [i[1] for i in finalLoc]
-    # df['cen_x'] = df.map({0: cen_x[0], 1: cen_x[1]})
-    # df['cen_y'] = df.map({0: cen_y[0], 1: cen_y[1]})
-    # # define and map colors
-    # colors = ['#DF2020', '#81DF20', '#2095DF']
-    # df['c'] = df.cluster.map({0: colors[0], 1: colors[1], 2: colors[2]})
 
 
 
