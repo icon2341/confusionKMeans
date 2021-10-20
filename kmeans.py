@@ -82,6 +82,8 @@ if __name__ == '__main__':
     # lowest sse value of the 10 initial runs
     lowestSSE = kmeans.inertia_
 
+
+
     # Final locations of the centroid
     finalLoc = kmeans.cluster_centers_
     print(finalLoc)
@@ -99,9 +101,11 @@ if __name__ == '__main__':
                            name="PCA1 vs PCA2"
                            )
 
+    data2 = pgo.graph_objs.Scatter()
+
 
 
     out = [data1]
 
-
     pgo.offline.iplot(out)
+
