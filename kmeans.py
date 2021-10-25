@@ -7,6 +7,7 @@ import pandas as pd
 import sklearn
 from joblib.numpy_pickle_utils import xrange
 from kneed import KneeLocator
+from plotly.validators.box.marker import SymbolValidator
 from sklearn.datasets import make_blobs
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
@@ -24,6 +25,7 @@ import chart_studio
 import plotly.io as pio
 import glob
 from random import seed
+import plotly.graph_objects as go
 from random import random
 
 # take the data in the csv and convert it into an array
@@ -73,7 +75,7 @@ if __name__ == '__main__':
     plt.ylabel('inertia')
     plt.xticks(ks)
 
-    #plt.show()
+    # plt.show()
 
     kmeans = KMeans(
         init="random",  # random initial centroid position
@@ -97,19 +99,46 @@ if __name__ == '__main__':
 
     # i now have classified data,
 
-    # out = px.scatter(x=PCA_components[0], y=PCA_components[1], mode='markers', marker=dict(color=kmeans.labels_))
-    data1 = pgo.graph_objs.Scatter(x=PCA_components[0],
+    raw_symbols = SymbolValidator().values
+    namestems = []
+    namevariants = []
+    symbols = []
+    for i in range(0, len(raw_symbols), 3):
+        name = raw_symbols[i + 2]
+        symbols.append(raw_symbols[i])
+        namestems.append(name.replace("-open", "").replace("-dot", ""))
+        namevariants.append(name[len(namestems[-1]):])
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=PCA_components[0],
+                                   name="Confusion Data",
                                    y=PCA_components[1],
                                    mode='markers',
                                    marker=dict(color=kmeans.labels_),
-                                   name="PCA1 vs PCA2"
-                                   )
+                                   ))
 
-    data2 = pgo.graph_objs.Scatter()
 
-    out = [data1]
+    fig.add_trace(go.Scatter(mode="markers", x=finalLoc[:, 0], y=finalLoc[:, 1], marker_symbol="x",
+                             # marker_line_color="black", marker_color="blue",
+                             marker=dict(color=[1,2,3,4]),
+                             marker_line_width=2, marker_size=15,
+                             name="Cluster Centroids",
+                             hovertemplate="name: %{y}%{x}<br>number: %{marker.symbol}<extra></extra>"))
 
-    pgo.offline.iplot(out)
+
+
+    fig.update_layout(
+        title="Clustering of Dimension Reduced Confusion Data",
+        xaxis_title="PCA 1",
+        yaxis_title="PCA 2",
+        legend_title="Symbols",
+        font=dict(
+            family="Arial",
+            size=18,
+        )
+    )
+
+    fig.show()
 
     # HOPKINS STATISTIC SCORING
     # generate random points of same size
@@ -125,11 +154,8 @@ if __name__ == '__main__':
         pointX.append(random())
         pointY.append(random())
 
-
-
     # calculate sum of nearest neighbors for artificial
     artificialSum = 0
-
 
     for i in range(numberOfPoints):
         X1 = pointX[i]
@@ -142,7 +168,7 @@ if __name__ == '__main__':
             X2 = pointX[j]
             Y2 = pointY[j]
             # calculate distance
-            distance = math.sqrt(abs(Y2-Y1) + abs(X2-X1))
+            distance = math.sqrt(abs(Y2 - Y1) + abs(X2 - X1))
 
             if distance < minDistance:
                 minDistance = distance
@@ -172,11 +198,4 @@ if __name__ == '__main__':
 
     hopkinsStatistic = realSum / (artificialSum + realSum)
 
-    print(hopkinsStatistic)
-
-
-
-
-
-
-
+    print("HOPKINS: " + str(hopkinsStatistic))
