@@ -43,6 +43,7 @@ if __name__ == '__main__':
     #print(features)
 
     df = pd.read_csv("data/139t2.csv")
+    pca = PCA()
     #scale the data such that mean of zero and std of 1
     #dataReduced = pca.fit_transform(scale(df))
 
@@ -53,9 +54,11 @@ if __name__ == '__main__':
 
     #now apply PCA
 
-    pca = PCA()
-    components = pca.fit_transform(df[fLabel])
 
+    components = pca.fit_transform(df[fLabel])
+    #components = pca.fit_transform(scale(df))
+
+    print(df[fLabel])
 
     labels = {
         str(i): f"PC {i + 1} ({var:.1f}%)"

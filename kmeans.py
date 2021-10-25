@@ -1,3 +1,5 @@
+import math
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas
@@ -21,6 +23,8 @@ import plotly as pgo
 import chart_studio
 import plotly.io as pio
 import glob
+from random import seed
+from random import random
 
 # take the data in the csv and convert it into an array
 
@@ -28,7 +32,7 @@ import glob
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
 
-    #get the data
+    # get the data
     df = pd.read_csv("data/139t2.csv")
 
     # Standardize the data to have a mean of ~0 and a variance of 1
@@ -44,13 +48,13 @@ if __name__ == '__main__':
     plt.ylabel('variance %')
     plt.xticks(features)
 
-
     # Save components to a DataFrame
     PCA_components = pd.DataFrame(principalComponents)
 
-    plt.scatter(PCA_components[0], PCA_components[1], alpha=.1, color='black')
-    plt.xlabel('PCA 1')
-    plt.ylabel('PCA 2')
+    # #render PCA
+    # plt.scatter(PCA_components[0], PCA_components[1], alpha=.1, color='black')
+    # plt.xlabel('PCA 1')
+    # plt.ylabel('PCA 2')
 
     ks = range(1, 10)
     inertias = []
@@ -69,6 +73,8 @@ if __name__ == '__main__':
     plt.ylabel('inertia')
     plt.xticks(ks)
 
+    #plt.show()
+
     kmeans = KMeans(
         init="random",  # random initial centroid position
         n_clusters=4,  # number of centroids/clusters of the data
@@ -82,8 +88,6 @@ if __name__ == '__main__':
     # lowest sse value of the 10 initial runs
     lowestSSE = kmeans.inertia_
 
-
-
     # Final locations of the centroid
     finalLoc = kmeans.cluster_centers_
     print(finalLoc)
@@ -93,19 +97,86 @@ if __name__ == '__main__':
 
     # i now have classified data,
 
-    #out = px.scatter(x=PCA_components[0], y=PCA_components[1], mode='markers', marker=dict(color=kmeans.labels_))
+    # out = px.scatter(x=PCA_components[0], y=PCA_components[1], mode='markers', marker=dict(color=kmeans.labels_))
     data1 = pgo.graph_objs.Scatter(x=PCA_components[0],
-                           y=PCA_components[1],
-                           mode='markers',
-                           marker=dict(color=kmeans.labels_),
-                           name="PCA1 vs PCA2"
-                           )
+                                   y=PCA_components[1],
+                                   mode='markers',
+                                   marker=dict(color=kmeans.labels_),
+                                   name="PCA1 vs PCA2"
+                                   )
 
     data2 = pgo.graph_objs.Scatter()
-
-
 
     out = [data1]
 
     pgo.offline.iplot(out)
+
+    # HOPKINS STATISTIC SCORING
+    # generate random points of same size
+
+    numberOfPoints = len(PCA_components)
+
+    # calculate sum of distances from each point to nearest neighbor
+    pointX = []
+    pointY = []
+
+    seed(21)
+    for i in range(len(PCA_components)):
+        pointX.append(random())
+        pointY.append(random())
+
+
+
+    # calculate sum of nearest neighbors for artificial
+    artificialSum = 0
+
+
+    for i in range(numberOfPoints):
+        X1 = pointX[i]
+        Y1 = pointY[i]
+        minDistance = 1000000000
+
+        for j in range(numberOfPoints):
+            if i == j:
+                continue
+            X2 = pointX[j]
+            Y2 = pointY[j]
+            # calculate distance
+            distance = math.sqrt(abs(Y2-Y1) + abs(X2-X1))
+
+            if distance < minDistance:
+                minDistance = distance
+
+        artificialSum += minDistance
+
+        # calculate sum of nearest neighbors for artificial
+    realSum = 0
+
+    for i in range(numberOfPoints):
+        X1 = PCA_components[0][i]
+        Y1 = PCA_components[1][i]
+        minDistance = 1000000000
+
+        for j in range(numberOfPoints):
+            if i == j:
+                continue
+            X2 = PCA_components[0][j]
+            Y2 = PCA_components[1][j]
+            # calculate distance
+            distance = math.sqrt(abs(Y2 - Y1) + abs(X2 - X1))
+
+            if distance < minDistance:
+                minDistance = distance
+
+        realSum += minDistance
+
+    hopkinsStatistic = realSum / (artificialSum + realSum)
+
+    print(hopkinsStatistic)
+
+
+
+
+
+
 
