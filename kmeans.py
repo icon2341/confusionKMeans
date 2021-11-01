@@ -27,8 +27,9 @@ import glob
 from random import seed
 import plotly.graph_objects as go
 from random import random
+from old.code import base85 as encode
 
-# take the data in the csv and convert it into an array
+
 
 
 # Press the green button in the gutter to run the script.
@@ -77,9 +78,11 @@ if __name__ == '__main__':
 
     # plt.show()
 
+    k_clusters = 4
+
     kmeans = KMeans(
         init="random",  # random initial centroid position
-        n_clusters=4,  # number of centroids/clusters of the data
+        n_clusters=k_clusters,  # number of centroids/clusters of the data
         n_init=10,  # number of initializations to perform
         max_iter=300,  # number of itterations to perform to move each centroid
         random_state=42  # the seed
@@ -199,3 +202,51 @@ if __name__ == '__main__':
     hopkinsStatistic = realSum / (artificialSum + realSum)
 
     print("HOPKINS: " + str(hopkinsStatistic))
+
+    #cluster labels
+    CONF = {"139t2": "yX6n}1gY1%a&bSZ"}
+    lables = encode.time16_to_frames(CONF["139t2"], 8601)
+    print(lables)
+
+    #cluster purity implementation
+    print(kmeans.labels_)
+
+    cluster_map = pd.DataFrame()
+    cluster_map['START_TIMES'] = df['start_time'].tolist()
+    cluster_map['PCAX'] = PCA_components[0]
+    cluster_map['PCAY'] = PCA_components[1]
+    cluster_map['Clusters'] = kmeans.labels_
+
+    #k many clusters, each with odrx 0-3 values of confusion
+    clusterTallys = []
+    for i in range(k_clusters):
+        clusterTallys.append([0, 0, 0, 0])
+    print(clusterTallys)
+
+
+    print(cluster_map)
+
+
+    #map the points to the lables
+    for i in range(len(cluster_map.index)):
+        row = cluster_map.iloc[i]
+        #calculate frame index based off of start time
+        value = int(row[0]/0.04)
+        labelValue = int(lables[value])
+        clusterValue = int(row[-1])
+        clusterTallys[clusterValue-1][labelValue] += 1
+
+
+    #now calculate cluster purity
+    clusterMaxSum = 0
+    for i in range(k_clusters):
+        clusterMaxSum += max(clusterTallys[i])
+
+    # divide by total number of points
+
+    purityScore = clusterMaxSum/len(cluster_map.index)
+    print(purityScore)
+
+
+
+
