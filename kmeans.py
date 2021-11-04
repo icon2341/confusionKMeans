@@ -112,36 +112,6 @@ if __name__ == '__main__':
         namestems.append(name.replace("-open", "").replace("-dot", ""))
         namevariants.append(name[len(namestems[-1]):])
 
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=PCA_components[0],
-                                   name="Confusion Data",
-                                   y=PCA_components[1],
-                                   mode='markers',
-                                   marker=dict(color=kmeans.labels_),
-                                   ))
-
-
-    fig.add_trace(go.Scatter(mode="markers", x=finalLoc[:, 0], y=finalLoc[:, 1], marker_symbol="x",
-                             # marker_line_color="black", marker_color="blue",
-                             marker=dict(color=[1,2,3,4]),
-                             marker_line_width=2, marker_size=15,
-                             name="Cluster Centroids",
-                             hovertemplate="name: %{y}%{x}<br>number: %{marker.symbol}<extra></extra>"))
-
-
-
-    fig.update_layout(
-        title="Clustering of Dimension Reduced Confusion Data",
-        xaxis_title="PCA 1",
-        yaxis_title="PCA 2",
-        legend_title="Symbols",
-        font=dict(
-            family="Arial",
-            size=18,
-        )
-    )
-
-    fig.show()
 
     # HOPKINS STATISTIC SCORING
     # generate random points of same size
@@ -206,10 +176,10 @@ if __name__ == '__main__':
     #cluster labels
     CONF = {"139t2": "yX6n}1gY1%a&bSZ"}
     lables = encode.time16_to_frames(CONF["139t2"], 8601)
-    print(lables)
+    #print(lables)
 
     #cluster purity implementation
-    print(kmeans.labels_)
+    #print(kmeans.labels_)
 
     cluster_map = pd.DataFrame()
     cluster_map['START_TIMES'] = df['start_time'].tolist()
@@ -221,11 +191,11 @@ if __name__ == '__main__':
     clusterTallys = []
     for i in range(k_clusters):
         clusterTallys.append([0, 0, 0, 0])
-    print(clusterTallys)
 
 
     print(cluster_map)
 
+    dataLabels = []
 
     #map the points to the lables
     for i in range(len(cluster_map.index)):
@@ -235,6 +205,8 @@ if __name__ == '__main__':
         labelValue = int(lables[value])
         clusterValue = int(row[-1])
         clusterTallys[clusterValue-1][labelValue] += 1
+        dataLabels.append(labelValue)
+
 
 
     #now calculate cluster purity
@@ -246,6 +218,93 @@ if __name__ == '__main__':
 
     purityScore = clusterMaxSum/len(cluster_map.index)
     print(purityScore)
+
+
+    # seperate the PCA into various Lables for plotting in particular shapes
+    # EACH INDEX IS A LIST OF PCA X OR Y, THE INDEX CORRELATES TO THE DATA LABEL OF HOW CONFUSED THAT PERSON IS
+    PCA_X = [[], [], [], []]
+    PCA_Y = [[], [], [], []]
+    colors = [[], [], [], []]
+
+    for i in range(len(PCA_components[0])):
+        # go through each PCA component pair, then go through the corresponding label to determine what group to add the PCA to
+        PCA_X[dataLabels[i]].append(PCA_components[0][i])
+        PCA_Y[dataLabels[i]].append(PCA_components[1][i])
+        colors[dataLabels[i]].append(kmeans.labels_[i])
+
+
+
+
+
+    fig = go.Figure()
+    # data1 = fig.add_trace(go.Scatter(x=PCA_components[0],
+    #                                name="Confusion Data",
+    #                                y=PCA_components[1],
+    #                                mode='markers',
+    #                                marker=dict(color=kmeans.labels_),
+    #                                ))
+    #add each PCA label to scatter
+
+    #not confused
+    data1 = fig.add_trace(go.Scatter(mode = 'markers', x = PCA_X[0], y=PCA_Y[0],
+                             marker_symbol="0",
+                             marker=dict(color=colors[0]),
+                             name = "Not At All Confused",
+                             line= dict(width= 20, color = 'black')
+                             ))
+
+    #somewhat confused
+    data1 = fig.add_trace(go.Scatter(mode='markers', x=PCA_X[1], y=PCA_Y[1],
+                                     marker_symbol="1",
+                                     marker=dict(color=colors[1]),
+                                     name="Slightly Confused",
+                                     line= dict(width= 10, color = 'black')
+                                     ))
+
+    #very confused
+    data1 = fig.add_trace(go.Scatter(mode='markers', x=PCA_X[2], y=PCA_Y[2],
+                                     marker_symbol="13",
+                                     marker=dict(color=colors[2]),
+                                     name="Very Confused",
+                                     line= dict(width= 3, color = 'black')
+                                     ))
+
+    #exrtremely confused
+    data1 = fig.add_trace(go.Scatter(mode='markers', x=PCA_X[3], y=PCA_Y[3],
+                                     marker_symbol="17",
+                                     marker=dict(color=colors[3]),
+                                     name="Extremely Confused",
+                                     line= dict(width= 3, color = 'black')
+                                     ))
+
+
+
+
+
+    # Centroids
+    data2 = fig.add_trace(go.Scatter(mode="markers", x=finalLoc[:, 0], y=finalLoc[:, 1], marker_symbol="x",
+                             # marker_line_color="black", marker_color="blue",
+                             marker=dict(color=[1,2,3,4]),
+                             marker_line_width=2, marker_size=15,
+                             name="Cluster Centroids",
+                             hovertemplate="name: %{y}%{x}<br>number: %{marker.symbol}<extra></extra>"))
+
+
+
+
+
+    fig.update_layout(
+        title="Clustering of Dimension Reduced Confusion Data",
+        xaxis_title="PCA 1",
+        yaxis_title="PCA 2",
+        legend_title="Symbols",
+        font=dict(
+            family="Arial",
+            size=18,
+        )
+    )
+
+    fig.show()
 
 
 
