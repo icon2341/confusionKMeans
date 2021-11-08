@@ -57,6 +57,11 @@ if __name__ == '__main__':
             headerLine += header
             headerLine += ", "
 
+        #adding UNK to fix JANK formatting left by previous writter
+        headerLine+= "UNK"
+
+
+
         print(headerLine)
 
         #add headerline to all lines
@@ -69,6 +74,7 @@ if __name__ == '__main__':
         for line in allLines:
             f.write(line)
         f.close()
+
 
         # debug read
         #f = open("data/" + filename, 'r')
