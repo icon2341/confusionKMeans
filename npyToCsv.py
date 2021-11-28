@@ -25,7 +25,8 @@ if __name__ == '__main__':
     data = np.load("av_0724_1/avt_0728.npz")
     #for each key value pair, convert into a csv
     for key, value in data.items():
-        np.savetxt("data/" + key + ".csv", value)
+        np.savetxt("data/" + key + ".csv", value, delimiter=', ')
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
+
 #Coment

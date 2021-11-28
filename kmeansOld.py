@@ -55,8 +55,8 @@ if __name__ == '__main__':
     #now apply PCA
 
 
-    components = pca.fit_transform(df[fLabel])
-    #components = pca.fit_transform(scale(df))
+    #components = pca.fit_transform(df[fLabel])
+    components = pca.fit_transform(scale(df))
 
     print(df[fLabel])
 

@@ -2,6 +2,7 @@ import math
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import sklearn
 from plotly.validators.box.marker import SymbolValidator
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
@@ -288,6 +289,8 @@ if __name__ == '__main__':
             size=18,
         )
     )
+
+    print("CHI: " + str(sklearn.metrics.calinski_harabasz_score(PCA_components, kmeans.labels_)))
 
     fig.show()
 
