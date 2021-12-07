@@ -1,6 +1,7 @@
 import math
 
 import matplotlib.pyplot as plt
+import pandas
 import pandas as pd
 import sklearn
 from plotly.validators.box.marker import SymbolValidator
@@ -18,7 +19,8 @@ from old.code import base85 as encode
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     # get the data
-    df = pd.read_csv("data/556t3.csv")
+
+    df = pandas.read_csv("data/139t2.csv")
 
     print(df)
     # Standardize the data to have a mean of ~0 and a variance of 1
@@ -38,9 +40,9 @@ if __name__ == '__main__':
     PCA_components = pd.DataFrame(principalComponents)
 
     # #render PCA
-    # plt.scatter(PCA_components[0], PCA_components[1], alpha=.1, color='black')
-    # plt.xlabel('PCA 1')
-    # plt.ylabel('PCA 2')
+    plt.scatter(PCA_components[0], PCA_components[1], alpha=.1, color='black')
+    plt.xlabel('PCA 1')
+    plt.ylabel('PCA 2')
 
     ks = range(1, 10)
     inertias = []
@@ -162,7 +164,8 @@ if __name__ == '__main__':
     #cluster labels
     CONF = {"556t3": "yMR#f16L(X2n)+W3FbW-4ycGw5J{:r7cJC:7LAWe8w0<.9m#B.betS=dF>QBe9[*sf-9OAgdTk9hiG>#hYT([kF/Vql5U^z"}
     labels = encode.time16_to_frames(CONF["556t3"], NUM_FRAMES)
-    #print(lables)
+    print(labels)
+    print(len(labels))
 
     #cluster purity implementation
     #print(kmeans.labels_)

@@ -40,7 +40,7 @@ def write_out(f_in,p_out,conv=False,verbose=False):
 
     # Targeted OpenFace/openSMILE commands:
     # FaceLandmarkVidMulti -f "path/to/input.mp4" -out_dir "path/to/out/dir"
-    # SMILExtract -C "path/to/config.conf" -I "path/to/input.wav" -D "path/to/output.csv"
+    # SMILExtract -C "path/to/config.conf" -I "path/to/input.wav" -D "path/to/outputBackup.csv"
     # conv process simply makes a wav and puts it in proper output directory
     progs = {
             'mp4' : [
