@@ -20,7 +20,7 @@ from old.code import base85 as encode
 if __name__ == '__main__':
     # get the data
 
-    df = pandas.read_csv("data/139t2.csv")
+    df = pandas.read_csv("../data/139t2.csv")
 
     print(df)
     # Standardize the data to have a mean of ~0 and a variance of 1

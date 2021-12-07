@@ -9,10 +9,12 @@ import sklearn
 from joblib.numpy_pickle_utils import xrange
 from kneed import KneeLocator
 from numpy import number
+from plotly.graph_objs import Scene
+from plotly.graph_objs.layout.scene import XAxis, YAxis, ZAxis
 from plotly.offline import iplot
 from plotly.validators.box.marker import SymbolValidator
 from sklearn.datasets import make_blobs
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, kmeans_plusplus
 from sklearn.metrics import silhouette_score
 from sklearn.model_selection import RepeatedKFold
 from sklearn.preprocessing import StandardScaler
@@ -180,9 +182,34 @@ if __name__ == '__main__':
             labelMap[str(file[:5])].append(labelFrames[str(file[:5])][startIndex])
         l.close()
 
+    notConfusedCount = 0
+    somewhatConfusedCount = 0
+    veryConfusedCount = 0
+    extremelyConfusedCount = 0
 
 
+    for key in labelMap.keys():
+        subjectLabels = labelMap[key]
+        notConfusedCount += subjectLabels.count(0)
+        somewhatConfusedCount += subjectLabels.count(1)
+        veryConfusedCount += subjectLabels.count(2)
+        extremelyConfusedCount += subjectLabels.count(3)
 
+    totalInstance = notConfusedCount + somewhatConfusedCount + veryConfusedCount + extremelyConfusedCount
+
+    print(notConfusedCount,somewhatConfusedCount,veryConfusedCount,extremelyConfusedCount, totalInstance)
+
+    # import matplotlib.pyplot as plt
+    #
+    # figBar = plt.figure()
+    # ax = figBar.add_subplot(111)
+    # categories = ["Not Confused", "Somewhat Confused", "Very Confused", "Extremely Confused"]
+    # num = [notConfusedCount, somewhatConfusedCount, veryConfusedCount, extremelyConfusedCount]
+    # ax.bar(categories, num)
+    # plt.xlabel("Reference Label Categories")
+    # plt.ylabel("Number of Reference Labels")
+    # plt.title("Reference Label Distribution (" + str(totalInstance) + " Occurrences) ")
+    # plt.show()
 
 
 
@@ -192,32 +219,34 @@ if __name__ == '__main__':
 
     # standardize dataset so that data works better with K-means
     scaledDataSet = pd.DataFrame(StandardScaler().fit_transform(dataSet))
-
+    # scaledDataSet = dataSet
     # determine number of clusters using elbow method
 
-    ks = range(1, 10)
-    inertias = []
-    for k in ks:
-        # Create a KMeans instance with k clusters: model
-        model = KMeans(n_clusters=k)
-
-        # Fit model to samples
-        model.fit(scaledDataSet)
-
-        # Append the inertia to the list of inertias
-        inertias.append(model.inertia_)
-
-    plt.plot(ks, inertias, '-o', color='black')
-    plt.xlabel('number of clusters, k')
-    plt.ylabel('inertia (SSE)')
-    plt.title('Inertia v.s Number of Clusters Across All Modalities')
-    plt.xticks(ks)
-
-    plt.show()
+    # ks = range(1, 10)
+    # inertias = []
+    # for k in ks:
+    #     # Create a KMeans instance with k clusters: model
+    #     model = KMeans(n_clusters=k)
+    #
+    #     # Fit model to samples
+    #     model.fit(scaledDataSet)
+    #
+    #     # Append the inertia to the list of inertias
+    #     inertias.append(model.inertia_)
+    #
+    # plt.plot(ks, inertias, '-o', color='black')
+    # plt.xlabel('number of clusters, k')
+    # plt.ylabel('inertia (SSE)')
+    # plt.title('Inertia v.s Number of Clusters Across All Modalities')
+    # plt.xticks(ks)
+    #
+    # plt.show()
 
     # Using sklearn
-    km = sklearn.cluster.KMeans(n_clusters=3)
+    km = sklearn.cluster.KMeans(n_clusters=3, init='k-means++', n_init=1000)
+
     km.fit(scaledDataSet)
+
 
     # Find which cluster each data-point belongs to
     clusters = km.predict(scaledDataSet)
@@ -229,9 +258,8 @@ if __name__ == '__main__':
     #
     # pca = PCA().fit(scaledDataSet)
     # plt.plot(np.cumsum(pca.explained_variance_ratio_))
-    # plt.plot(3, np.cumsum(pca.explained_variance_ratio_)[3], marker='o', markersize=6, color="black",
-    #          label='3 PCA components')
-    # print(np.cumsum(pca.explained_variance_ratio_)[3])
+    # plt.plot(3, np.cumsum(pca.explained_variance_ratio_)[3], marker='o', markersize=6, color="black", label='3 PCA components')
+    # print(np.cumsum(pca.explained_variance_ratio_)[2])
     # plt.xlabel('number of components')
     # plt.ylabel('cumulative explained variance')
     # plt.title('cumulative explained variance vs number of PCA components')
@@ -305,22 +333,150 @@ if __name__ == '__main__':
     cluster0 = subSet[subSet["Cluster"] == 0]
     cluster1 = subSet[subSet["Cluster"] == 1]
     cluster2 = subSet[subSet["Cluster"] == 2]
+    cluster3 = subSet[subSet["Cluster"] == 3]
+    cluster4 = subSet[subSet["Cluster"] == 4]
+    cluster5 = subSet[subSet["Cluster"] == 5]
+    cluster6 = subSet[subSet["Cluster"] == 6]
+    cluster7 = subSet[subSet["Cluster"] == 7]
 
     cluster03d = pd.concat([cluster0["PC1_3d"], cluster0["PC2_3d"], cluster0["PC3_3d"]], axis=1, join='inner')
     cluster13d = pd.concat([cluster1["PC1_3d"], cluster1["PC2_3d"], cluster1["PC3_3d"]], axis=1, join='inner')
     cluster23d = pd.concat([cluster2["PC1_3d"], cluster2["PC2_3d"], cluster2["PC3_3d"]], axis=1, join='inner')
+    cluster33d = pd.concat([cluster3["PC1_3d"], cluster3["PC2_3d"], cluster3["PC3_3d"]], axis=1, join='inner')
+    cluster43d = pd.concat([cluster4["PC1_3d"], cluster4["PC2_3d"], cluster4["PC3_3d"]], axis=1, join='inner')
+    cluster53d = pd.concat([cluster5["PC1_3d"], cluster5["PC2_3d"], cluster5["PC3_3d"]], axis=1, join='inner')
+    cluster63d = pd.concat([cluster6["PC1_3d"], cluster6["PC2_3d"], cluster6["PC3_3d"]], axis=1, join='inner')
+    cluster73d = pd.concat([cluster7["PC1_3d"], cluster7["PC2_3d"], cluster7["PC3_3d"]], axis=1, join='inner')
 
-    cluster0Centroid = cluster03d.mean(0)
-    cluster1Centroid = cluster13d.mean(0)
-    cluster2Centroid = cluster23d.mean(0)
+    cluster02d = pd.concat([cluster0["PC1_2d"], cluster0["PC2_2d"]], axis=1, join='inner')
+    cluster12d = pd.concat([cluster1["PC1_2d"], cluster1["PC2_2d"]], axis=1, join='inner')
+    cluster22d = pd.concat([cluster2["PC1_2d"], cluster2["PC2_2d"]], axis=1, join='inner')
+    cluster32d = pd.concat([cluster3["PC1_2d"], cluster3["PC2_2d"]], axis=1, join='inner')
+    cluster42d = pd.concat([cluster4["PC1_2d"], cluster4["PC2_2d"]], axis=1, join='inner')
+    cluster52d = pd.concat([cluster5["PC1_2d"], cluster5["PC2_2d"]], axis=1, join='inner')
+    cluster62d = pd.concat([cluster6["PC1_2d"], cluster6["PC2_2d"]], axis=1, join='inner')
+    cluster72d = pd.concat([cluster7["PC1_2d"], cluster7["PC2_2d"]], axis=1, join='inner')
 
-    centroids = pd.concat([cluster0Centroid, cluster1Centroid, cluster2Centroid], axis=0)
-    print(centroids["PC1_3d"])
+    cluster0Centroid2d = cluster02d.mean(0)
+    cluster1Centroid2d = cluster12d.mean(0)
+    cluster2Centroid2d = cluster22d.mean(0)
+    cluster3Centroid2d = cluster32d.mean(0)
+    cluster4Centroid2d = cluster42d.mean(0)
+    cluster5Centroid2d = cluster52d.mean(0)
+    cluster6Centroid2d = cluster62d.mean(0)
+    cluster7Centroid2d = cluster72d.mean(0)
+
+    cluster0Centroid3d = cluster03d.mean(0)
+    cluster1Centroid3d = cluster13d.mean(0)
+    cluster2Centroid3d = cluster23d.mean(0)
+    cluster3Centroid3d = cluster33d.mean(0)
+    cluster4Centroid3d = cluster43d.mean(0)
+    cluster5Centroid3d = cluster53d.mean(0)
+    cluster6Centroid3d = cluster63d.mean(0)
+    cluster7Centroid3d = cluster73d.mean(0)
+
+    centroids2d = pd.concat([cluster0Centroid2d, cluster1Centroid2d, cluster2Centroid2d, cluster3Centroid2d,
+                             cluster4Centroid2d, cluster5Centroid2d, cluster6Centroid2d, cluster7Centroid2d], axis=0)
+    centroids3d = pd.concat([cluster0Centroid3d, cluster1Centroid3d, cluster2Centroid3d, cluster3Centroid3d,
+                             cluster4Centroid3d, cluster5Centroid3d, cluster6Centroid3d, cluster7Centroid3d], axis=0)
+
+    # divide the plots by cluster
+
+    # PLOT 2D
+    # trace1 is for 'Cluster 0'
+    trace12d = go.Scatter(
+        x=cluster0["PC1_2d"],
+        y=cluster0["PC2_2d"],
+        mode="markers",
+        name="Cluster 0",
+        marker=dict(color='rgba(255, 128, 255, 0.8)'),
+        text=None)
+
+    # trace2 is for 'Cluster 1'
+    trace22d = go.Scatter(
+        x=cluster1["PC1_2d"],
+        y=cluster1["PC2_2d"],
+        mode="markers",
+        name="Cluster 1",
+        marker=dict(color='rgba(255, 128, 2, 0.8)'),
+        text=None)
+
+    # trace3 is for 'Cluster 2'
+    trace32d = go.Scatter(
+        x=cluster2["PC1_2d"],
+        y=cluster2["PC2_2d"],
+        mode="markers",
+        name="Cluster 2",
+        marker=dict(color='rgba(0, 255, 200, 0.8)'),
+        text=None)
+
+    # trace3 is for 'Cluster 2'
+    trace42d = go.Scatter(
+        x=cluster3["PC1_2d"],
+        y=cluster3["PC2_2d"],
+        mode="markers",
+        name="Cluster 3",
+        marker=dict(color='brown'),
+        text=None)
+    # trace3 is for 'Cluster 2'
+    trace52d = go.Scatter(
+        x=cluster4["PC1_2d"],
+        y=cluster4["PC2_2d"],
+        mode="markers",
+        name="Cluster 4",
+        marker=dict(color='green'),
+        text=None)
+    # trace3 is for 'Cluster 2'
+    trace62d = go.Scatter(
+        x=cluster5["PC1_2d"],
+        y=cluster5["PC2_2d"],
+        mode="markers",
+        name="Cluster 5",
+        marker=dict(color='#D3212D'),
+        text=None)
+    # trace3 is for 'Cluster 2'
+    trace72d = go.Scatter(
+        x=cluster6["PC1_2d"],
+        y=cluster6["PC2_2d"],
+        mode="markers",
+        name="Cluster 6",
+        marker=dict(color='purple'),
+        text=None)
+    # trace3 is for 'Cluster 2'
+    trace82d = go.Scatter(
+        x=cluster7["PC1_2d"],
+        y=cluster7["PC2_2d"],
+        mode="markers",
+        name="Cluster 7",
+        marker=dict(color='yellow'),
+        text=None)
+
+    centroidsTrace2d = go.Scatter(
+        x=centroids2d["PC1_2d"],
+        y=centroids2d["PC2_2d"],
+        mode="markers",
+        name="Cluster Centroids",
+        marker=dict(symbol=2, color='black', size=10),
+        text=None
+    )
+    # data = [trace1, trace2, trace3, centroidsTrace]
+    data2d = [trace12d, trace22d, trace32d, trace42d, trace52d, trace62d, trace72d, trace82d, centroidsTrace2d]
+
+    title2d = "KMeans Clustering of All Modalities Using PC 1 and 2"
+
+    layout2d = dict(title=title2d,
+                    xaxis=dict(title='PC1', ticklen=5, zeroline=False),
+                    yaxis=dict(title='PC2', ticklen=5, zeroline=False)
+                    )
+
+    fig2d = dict(data=data2d, layout=layout2d)
+
+    iplot(fig2d)
 
     # Instructions for building the 3-D plot
 
     # trace1 is for 'Cluster 0'
-    trace1 = go.Scatter3d(
+    trace13d = go.Scatter3d(
         x=cluster0["PC1_3d"],
         y=cluster0["PC2_3d"],
         z=cluster0["PC3_3d"],
@@ -331,7 +487,7 @@ if __name__ == '__main__':
         opacity=.5)
 
     # trace2 is for 'Cluster 1'
-    trace2 = go.Scatter3d(
+    trace23d = go.Scatter3d(
         x=cluster1["PC1_3d"],
         y=cluster1["PC2_3d"],
         z=cluster1["PC3_3d"],
@@ -342,7 +498,7 @@ if __name__ == '__main__':
         opacity=.5)
 
     # trace3 is for 'Cluster 2'
-    trace3 = go.Scatter3d(
+    trace33d = go.Scatter3d(
         x=cluster2["PC1_3d"],
         y=cluster2["PC2_3d"],
         z=cluster2["PC3_3d"],
@@ -351,43 +507,137 @@ if __name__ == '__main__':
         marker=dict(color='rgba(0, 255, 200, 0.8)'),
         text=None,
         opacity=.5)
+    # trace3 is for 'Cluster 3'
+    trace43d = go.Scatter3d(
+        x=cluster3["PC1_3d"],
+        y=cluster3["PC2_3d"],
+        z=cluster3["PC3_3d"],
+        mode="markers",
+        name="Cluster 3",
+        marker=dict(color='brown'),
+        text=None,
+        opacity=.5)
+    # trace3 is for 'Cluster 4'
+    trace53d = go.Scatter3d(
+        x=cluster4["PC1_3d"],
+        y=cluster4["PC2_3d"],
+        z=cluster4["PC3_3d"],
+        mode="markers",
+        name="Cluster 4",
+        marker=dict(color='green'),
+        text=None,
+        opacity=.5)
+    # trace3 is for 'Cluster 5'
+    trace63d = go.Scatter3d(
+        x=cluster5["PC1_3d"],
+        y=cluster5["PC2_3d"],
+        z=cluster5["PC3_3d"],
+        mode="markers",
+        name="Cluster 5",
+        marker=dict(color='#D3212D'),
+        text=None,
+        opacity=.5)
 
-    centroidTrace = go.Scatter3d(
-        x=centroids["PC1_3d"],
-        y=centroids["PC2_3d"],
-        z=centroids["PC3_3d"],
+    # trace3 is for 'Cluster 6'
+    trace73d = go.Scatter3d(
+        x=cluster6["PC1_3d"],
+        y=cluster6["PC2_3d"],
+        z=cluster6["PC3_3d"],
+        mode="markers",
+        name="Cluster 6",
+        marker=dict(color='purple'),
+        text=None,
+        opacity=.5)
+    # trace3 is for 'Cluster 7'
+    trace83d = go.Scatter3d(
+        x=cluster7["PC1_3d"],
+        y=cluster7["PC2_3d"],
+        z=cluster7["PC3_3d"],
+        mode="markers",
+        name="Cluster 7",
+        marker=dict(color='yellow'),
+        text=None,
+        opacity=.5)
+
+    centroidTrace3d = go.Scatter3d(
+        x=centroids3d["PC1_3d"],
+        y=centroids3d["PC2_3d"],
+        z=centroids3d["PC3_3d"],
         mode="markers",
         name="Cluster Centroid",
         marker=dict(color='black'),
         text=None,
         opacity=.7)
 
-    data = [trace1, trace2, trace3, centroidTrace]
+    trace103d = go.Scatter3d(
+        x=subSet["PC1_3d"],
+        y=subSet["PC2_3d"],
+        z=subSet["PC3_3d"],
+        mode="markers",
+        name="Points",
+        marker=dict(color=subSet["Cluster"]),
+        text=None,
+        opacity=.5)
 
-    title = "KMeans Clustering of Confusion Data for All Modalities"
+    data = [trace13d, trace23d, trace33d, trace43d, trace53d, trace63d, trace73d, trace83d, centroidTrace3d]
+    # data = [centroidTrace, trace10]
+
+    title = "KMeans Clustering of All Modalities Using PC 1, 2, and 3"
 
     layout = dict(title=title,
                   xaxis=dict(title='PC1', ticklen=5, zeroline=False),
-                  yaxis=dict(title='PC2', ticklen=5, zeroline=False)
+                  yaxis=dict(title='PC2', ticklen=5, zeroline=False),
+                  scene=Scene(
+                      xaxis=XAxis(title='PC1'),
+                      yaxis=YAxis(title='PC2'),
+                      zaxis=ZAxis(title='PC3')
+                  )
                   )
 
     fig = dict(data=data, layout=layout)
 
-    print(len(scaledDataSet.index))
+    print(len(scaledDataSet.index), end="")
     print(" instances clustered.")
     print("showing")
-
     iplot(fig)
 
-    np.set_printoptions(threshold=np.inf)
-
-    # print(km.labels_)
-
-    #get bar chart of label distributions
 
 
 
 
 
+    #implement cluster purity
 
+    #cluster purity implementation
+    puritySet = subSet
+    continuousLabelsList = []
+    for key in labelMap:
+        l = labelMap[key]
+        for value in l:
+            continuousLabelsList.append(value)
 
+    #labels are assigned to clusters
+    puritySet["continuousLabelsList"] = continuousLabelsList
+
+    #track label values within each cluster
+    clusterTallys = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+    for i in range(len(puritySet['Cluster'].index)):
+        clusterTallys[puritySet['Cluster'][i]][puritySet['continuousLabelsList'][i]] += 1
+
+    print(clusterTallys)
+    #now that data is updated, run cluster purity for each custer
+
+    maxTallys = []
+
+    for index in range(km.n_clusters):
+        maxTallys.append(max(clusterTallys[index]))
+
+    clusterPurity = sum(maxTallys)/len(subSet.index)
+
+    print(maxTallys)
+    print(len(subSet.index))
+    # scoring
+    print("\n", sklearn.metrics.silhouette_score(scaledDataSet, km.labels_))
+    print(sklearn.metrics.davies_bouldin_score(scaledDataSet, km.labels_))
+    print(sklearn.metrics.calinski_harabasz_score(scaledDataSet, km.labels_))
+    print(clusterPurity)

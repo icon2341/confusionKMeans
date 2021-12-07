@@ -24,7 +24,7 @@ import plotly.express as px
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     # open the csv data file (for the first user for now)
-    file = open("data/139t2.csv")
+    file = open("../data/139t2.csv")
 
     fLabel = []
     features = []
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     #fLabel.pop(fLabel.index(' curr_sentence_length'))
     #print(features)
 
-    df = pd.read_csv("data/139t2.csv")
+    df = pd.read_csv("../data/139t2.csv")
     pca = PCA()
     #scale the data such that mean of zero and std of 1
     #dataReduced = pca.fit_transform(scale(df))

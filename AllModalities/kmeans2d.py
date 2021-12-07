@@ -58,44 +58,37 @@ if __name__ == '__main__':
     print(len(ALL_HEADERS))
 
     # dataset containing all featuers for all frames accross users and all modalities
-    dataSet = pandas.read_csv("data/output.csv", names=ALL_HEADERS, index_col=False)
-
-    # Dropping headers that are not TXT
-    dataSet = dataSet[VID_HEADERS]
+    dataSet = pandas.read_csv("../data/output.csv", names=ALL_HEADERS, index_col=False)
 
     # check if any nulls
     # print(dataSet.isnull().sum())
 
     # standardize dataset so that data works better with K-means
     scaledDataSet = pd.DataFrame(StandardScaler().fit_transform(dataSet))
-    #scaledDataSet = dataSet
 
+    # determine number of clusters using elbow method
 
-    # # determine number of clusters using elbow method
-    #
-    # ks = range(1, 10)
-    # inertias = []
-    # for k in ks:
-    #     # Create a KMeans instance with k clusters: model
-    #     model = KMeans(n_clusters=k)
-    #
-    #     # Fit model to samples
-    #     model.fit(scaledDataSet)
-    #
-    #     # Append the inertia to the list of inertias
-    #     inertias.append(model.inertia_)
-    #
-    # plt.plot(ks, inertias, '-o', color='black')
-    # plt.xlabel('number of clusters, k')
-    # plt.ylabel('inertia')
-    # plt.xticks(ks)
-    #
-    # plt.show()
+    ks = range(1, 10)
+    inertias = []
+    for k in ks:
+        # Create a KMeans instance with k clusters: model
+        model = KMeans(n_clusters=k)
 
-    numberClusters = 3
+        # Fit model to samples
+        model.fit(scaledDataSet)
+
+        # Append the inertia to the list of inertias
+        inertias.append(model.inertia_)
+
+    plt.plot(ks, inertias, '-o', color='black')
+    plt.xlabel('number of clusters, k')
+    plt.ylabel('inertia')
+    plt.xticks(ks)
+
+    plt.show()
 
     # Using sklearn
-    km = sklearn.cluster.KMeans(n_clusters=numberClusters, )
+    km = sklearn.cluster.KMeans(n_clusters=3)
     km.fit(scaledDataSet)
 
     # Find which cluster each data-point belongs to
@@ -104,15 +97,12 @@ if __name__ == '__main__':
     # Add the cluster vector to our scaled DataFrame
     scaledDataSet["Cluster"] = clusters
 
-
-
-
-
     # # PCA varience graphed
     #
     # pca = PCA().fit(scaledDataSet)
     # plt.plot(np.cumsum(pca.explained_variance_ratio_))
-    # plt.plot(3, np.cumsum(pca.explained_variance_ratio_)[3], marker='o', markersize=6, color="black", label='3 PCA components')
+    # plt.plot(3, np.cumsum(pca.explained_variance_ratio_)[3], marker='o', markersize=6, color="black",
+    #          label='3 PCA components')
     # print(np.cumsum(pca.explained_variance_ratio_)[3])
     # plt.xlabel('number of components')
     # plt.ylabel('cumulative explained variance')
@@ -120,13 +110,8 @@ if __name__ == '__main__':
     #
     # plt.show()
 
-
-    #get cluster centers
-    #print(km.cluster_centers_)
-
-
-
-
+    # get cluster centers
+    # print(km.cluster_centers_)
 
     # #sampled subset of the entire scaledDataSet
     #
@@ -150,10 +135,7 @@ if __name__ == '__main__':
     # fig.update_traces(diagonal_visible=False)
     # fig.show()
 
-    subSet = scaledDataSet#.sample(5000)
-    #PCA 3
-
-    print("showing")
+    subSet = scaledDataSet  # .sample(500)
 
     # PCA with one principal component
     pca_1d = PCA(n_components=1)
@@ -175,7 +157,6 @@ if __name__ == '__main__':
     # in visualizing our clusters in 3-D
     PCs_3d = pd.DataFrame(pca_3d.fit_transform(subSet.drop(["Cluster"], axis=1)))
 
-    # rename the columns of these models
     PCs_1d.columns = ["PC1_1d"]
 
     # "PC1_2d" means: 'The first principal component of the components created for 2-D visualization, by PCA.'
@@ -185,6 +166,12 @@ if __name__ == '__main__':
     PCs_3d.columns = ["PC1_3d", "PC2_3d", "PC3_3d"]
 
     subSet = pd.concat([subSet, PCs_1d, PCs_2d, PCs_3d], axis=1, join='inner')
+
+
+    # Note that all of the DataFrames below are sub-DataFrames of 'plotX'.
+    # This is because we intend to plot the values contained within each of these DataFrames.
+
+    # divide the plots by cluster
 
     # divide the plots by cluster
 
@@ -217,8 +204,6 @@ if __name__ == '__main__':
 
     centroids = pd.concat([cluster0Centroid, cluster1Centroid, cluster2Centroid], axis=0)
     print(centroids["PC1_2d"])
-
-    # Instructions for building the 2-D plot
 
     # trace1 is for 'Cluster 0'
     trace1 = go.Scatter(
@@ -257,7 +242,7 @@ if __name__ == '__main__':
     )
     data = [trace1, trace2, trace3, centroidsTrace]
 
-    title = "Visualizing Clusters in Two Dimensions Using PCA"
+    title = "Kmeans Clustering of All Modalities PC 1 and 2"
 
     layout = dict(title=title,
                   xaxis=dict(title='PC1', ticklen=5, zeroline=False),
@@ -268,7 +253,8 @@ if __name__ == '__main__':
 
     iplot(fig)
 
-    print(len(subSet.index), end="")
+    print(len(scaledDataSet.index))
     print(" instances clustered.")
     print("showing")
+
 

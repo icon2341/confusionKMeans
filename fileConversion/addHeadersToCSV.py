@@ -41,6 +41,7 @@ ALL_HEADERS = TXT_HEADERS + AUD_HEADERS + VID_HEADERS
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
 
+
     # buildHeaderLine
     headerLine = ""
     for header in ALL_HEADERS:
@@ -49,13 +50,13 @@ if __name__ == '__main__':
 
     print(headerLine)
 
-    with open("data/output.csv", "r") as f:
+    with open("../data/output.csv", "r") as f:
         contents = f.readlines()
 
     contents.insert(0, headerLine)
 
 
-    with open("data/output.csv", "w") as f:
+    with open("../data/output.csv", "w") as f:
         contents2 = "".join(contents)
         print(contents2)
         f.write(contents2)

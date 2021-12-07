@@ -58,39 +58,39 @@ if __name__ == '__main__':
     print(len(ALL_HEADERS))
 
     # dataset containing all featuers for all frames accross users and all modalities
-    dataSet = pandas.read_csv("data/output.csv", names=ALL_HEADERS, index_col=False)
+    dataSet = pandas.read_csv("../data/output.csv", names=ALL_HEADERS, index_col=False)
 
-    #Dropping headers that are not TXT
-    dataSet = dataSet[AUD_HEADERS]
+    # Dropping headers that are not TXT
+    dataSet = dataSet[VID_HEADERS]
 
     # check if any nulls
-    #print(dataSet.isnull().sum())
+    # print(dataSet.isnull().sum())
 
     # standardize dataset so that data works better with K-means
     scaledDataSet = pd.DataFrame(StandardScaler().fit_transform(dataSet))
     #scaledDataSet = dataSet
 
 
-    # determine number of clusters using elbow method
-
-    ks = range(1, 10)
-    inertias = []
-    for k in ks:
-        # Create a KMeans instance with k clusters: model
-        model = KMeans(n_clusters=k)
-
-        # Fit model to samples
-        model.fit(scaledDataSet)
-
-        # Append the inertia to the list of inertias
-        inertias.append(model.inertia_)
-
-    plt.plot(ks, inertias, '-o', color='black')
-    plt.xlabel('number of clusters, k')
-    plt.ylabel('inertia')
-    plt.xticks(ks)
-
-    plt.show()
+    # # determine number of clusters using elbow method
+    #
+    # ks = range(1, 10)
+    # inertias = []
+    # for k in ks:
+    #     # Create a KMeans instance with k clusters: model
+    #     model = KMeans(n_clusters=k)
+    #
+    #     # Fit model to samples
+    #     model.fit(scaledDataSet)
+    #
+    #     # Append the inertia to the list of inertias
+    #     inertias.append(model.inertia_)
+    #
+    # plt.plot(ks, inertias, '-o', color='black')
+    # plt.xlabel('number of clusters, k')
+    # plt.ylabel('inertia')
+    # plt.xticks(ks)
+    #
+    # plt.show()
 
     numberClusters = 3
 
@@ -175,8 +175,7 @@ if __name__ == '__main__':
     # in visualizing our clusters in 3-D
     PCs_3d = pd.DataFrame(pca_3d.fit_transform(subSet.drop(["Cluster"], axis=1)))
 
-
-    #rename the columns of these models
+    # rename the columns of these models
     PCs_1d.columns = ["PC1_1d"]
 
     # "PC1_2d" means: 'The first principal component of the components created for 2-D visualization, by PCA.'
@@ -185,13 +184,9 @@ if __name__ == '__main__':
 
     PCs_3d.columns = ["PC1_3d", "PC2_3d", "PC3_3d"]
 
-
-
-
     subSet = pd.concat([subSet, PCs_1d, PCs_2d, PCs_3d], axis=1, join='inner')
 
-
-    #divide the plots by cluster
+    # divide the plots by cluster
 
     cluster0 = subSet[subSet["Cluster"] == 0]
     cluster1 = subSet[subSet["Cluster"] == 1]
@@ -202,29 +197,26 @@ if __name__ == '__main__':
     cluster6 = subSet[subSet["Cluster"] == 6]
     cluster7 = subSet[subSet["Cluster"] == 7]
 
+    cluster02d = pd.concat([cluster0["PC1_2d"], cluster0["PC2_2d"]], axis=1, join='inner')
+    cluster12d = pd.concat([cluster1["PC1_2d"], cluster1["PC2_2d"]], axis=1, join='inner')
+    cluster22d = pd.concat([cluster2["PC1_2d"], cluster2["PC2_2d"]], axis=1, join='inner')
+    cluster32d = pd.concat([cluster3["PC1_2d"], cluster3["PC2_2d"]], axis=1, join='inner')
+    cluster42d = pd.concat([cluster4["PC1_2d"], cluster4["PC2_2d"]], axis=1, join='inner')
+    cluster52d = pd.concat([cluster5["PC1_2d"], cluster5["PC2_2d"]], axis=1, join='inner')
+    cluster62d = pd.concat([cluster6["PC1_2d"], cluster6["PC2_2d"]], axis=1, join='inner')
+    cluster72d = pd.concat([cluster7["PC1_2d"], cluster7["PC2_2d"]], axis=1, join='inner')
 
-    cluster03d = pd.concat([cluster0["PC1_3d"], cluster0["PC2_3d"], cluster0["PC3_3d"]], axis=1, join='inner')
-    cluster13d = pd.concat([cluster1["PC1_3d"], cluster1["PC2_3d"], cluster1["PC3_3d"]], axis=1, join='inner')
-    cluster23d = pd.concat([cluster2["PC1_3d"], cluster2["PC2_3d"], cluster2["PC3_3d"]], axis=1, join='inner')
-    cluster33d = pd.concat([cluster3["PC1_3d"], cluster3["PC2_3d"], cluster3["PC3_3d"]], axis=1, join='inner')
-    cluster43d = pd.concat([cluster4["PC1_3d"], cluster4["PC2_3d"], cluster4["PC3_3d"]], axis=1, join='inner')
-    cluster53d = pd.concat([cluster5["PC1_3d"], cluster5["PC2_3d"], cluster5["PC3_3d"]], axis=1, join='inner')
-    cluster63d = pd.concat([cluster6["PC1_3d"], cluster6["PC2_3d"], cluster6["PC3_3d"]], axis=1, join='inner')
-    cluster73d = pd.concat([cluster7["PC1_3d"], cluster7["PC2_3d"], cluster7["PC3_3d"]], axis=1, join='inner')
+    cluster0Centroid = cluster02d.mean(0)
+    cluster1Centroid = cluster12d.mean(0)
+    cluster2Centroid = cluster22d.mean(0)
+    cluster3Centroid = cluster32d.mean(0)
+    cluster4Centroid = cluster42d.mean(0)
+    cluster5Centroid = cluster52d.mean(0)
+    cluster6Centroid = cluster62d.mean(0)
+    cluster7Centroid = cluster72d.mean(0)
 
-
-    cluster0Centroid = cluster03d.mean(0)
-    cluster1Centroid = cluster13d.mean(0)
-    cluster2Centroid = cluster23d.mean(0)
-    cluster3Centroid = cluster33d.mean(0)
-    cluster4Centroid = cluster43d.mean(0)
-    cluster5Centroid = cluster53d.mean(0)
-    cluster6Centroid = cluster63d.mean(0)
-    cluster7Centroid = cluster73d.mean(0)
-
-    centroids = pd.concat([cluster0Centroid, cluster1Centroid, cluster2Centroid, cluster3Centroid, cluster4Centroid,
-                           cluster5Centroid, cluster6Centroid, cluster7Centroid], axis=0)
-    print( centroids["PC1_3d"])
+    centroids = pd.concat([cluster0Centroid, cluster1Centroid, cluster2Centroid], axis=0)
+    print(centroids["PC1_2d"])
 
     # Instructions for building the 2-D plot
 
@@ -255,7 +247,15 @@ if __name__ == '__main__':
         marker=dict(color='rgba(0, 255, 200, 0.8)'),
         text=None)
 
-    data = [trace1, trace2, trace3]
+    centroidsTrace = go.Scatter(
+        x=centroids["PC1_2d"],
+        y=centroids["PC2_2d"],
+        mode="markers",
+        name="Cluster Centroids",
+        marker=dict(symbol=2, color='black'),
+        text=None
+    )
+    data = [trace1, trace2, trace3, centroidsTrace]
 
     title = "Visualizing Clusters in Two Dimensions Using PCA"
 
@@ -268,7 +268,7 @@ if __name__ == '__main__':
 
     iplot(fig)
 
-    print(len(scaledDataSet.index), end="")
+    print(len(subSet.index), end="")
     print(" instances clustered.")
     print("showing")
 

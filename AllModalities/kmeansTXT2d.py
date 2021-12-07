@@ -58,7 +58,7 @@ if __name__ == '__main__':
     print(len(ALL_HEADERS))
 
     # dataset containing all featuers for all frames accross users and all modalities
-    dataSet = pandas.read_csv("data/output.csv", names=ALL_HEADERS, index_col=False)
+    dataSet = pandas.read_csv("../data/output.csv", names=ALL_HEADERS, index_col=False)
 
     # Dropping headers that are not TXT
     dataSet = dataSet[TXT_HEADERS]
@@ -205,7 +205,9 @@ if __name__ == '__main__':
     cluster6Centroid = cluster62d.mean(0)
     cluster7Centroid = cluster72d.mean(0)
 
-    centroids = pd.concat([cluster0Centroid, cluster1Centroid, cluster2Centroid], axis=0)
+    centroids = pd.concat([cluster0Centroid, cluster1Centroid, cluster2Centroid,
+                           cluster3Centroid, cluster4Centroid, cluster5Centroid,
+                           cluster6Centroid, cluster7Centroid], axis=0)
     print(centroids["PC1_2d"])
 
     # Instructions for building the 2-D plot
@@ -237,26 +239,68 @@ if __name__ == '__main__':
         marker=dict(color='rgba(0, 255, 200, 0.8)'),
         text=None)
 
+    # trace3 is for 'Cluster 2'
+    trace4 = go.Scatter(
+        x=cluster3["PC1_2d"],
+        y=cluster3["PC2_2d"],
+        mode="markers",
+        name="Cluster 3",
+        marker=dict(color='brown'),
+        text=None)
+    # trace3 is for 'Cluster 2'
+    trace5 = go.Scatter(
+        x=cluster4["PC1_2d"],
+        y=cluster4["PC2_2d"],
+        mode="markers",
+        name="Cluster 4",
+        marker=dict(color='green'),
+        text=None)
+    # trace3 is for 'Cluster 2'
+    trace6 = go.Scatter(
+        x=cluster5["PC1_2d"],
+        y=cluster5["PC2_2d"],
+        mode="markers",
+        name="Cluster 5",
+        marker=dict(color='#D3212D'),
+        text=None)
+    # trace3 is for 'Cluster 2'
+    trace7 = go.Scatter(
+        x=cluster6["PC1_2d"],
+        y=cluster6["PC2_2d"],
+        mode="markers",
+        name="Cluster 6",
+        marker=dict(color='purple'),
+        text=None)
+    # trace3 is for 'Cluster 2'
+    trace8 = go.Scatter(
+        x=cluster7["PC1_2d"],
+        y=cluster7["PC2_2d"],
+        mode="markers",
+        name="Cluster 7",
+        marker=dict(color='yellow'),
+        text=None)
+
     centroidsTrace = go.Scatter(
         x=centroids["PC1_2d"],
         y=centroids["PC2_2d"],
         mode="markers",
         name="Cluster Centroids",
-        marker=dict(symbol=2, color='black'),
+        marker=dict(symbol=2, color='black',size= 10),
         text=None
     )
-    data = [trace1, trace2, trace3, centroidsTrace]
+    # data = [trace1, trace2, trace3, centroidsTrace]
+    data2d = [trace1, trace2, trace3, trace4, trace5, trace6, trace7, centroidsTrace]
 
-    title = "Visualizing Clusters in Two Dimensions Using PCA"
+    title2d = "KMeans Clustering of Language Modality Using PC 1 and 2"
 
-    layout = dict(title=title,
+    layout2d = dict(title=title2d,
                   xaxis=dict(title='PC1', ticklen=5, zeroline=False),
                   yaxis=dict(title='PC2', ticklen=5, zeroline=False)
                   )
 
-    fig = dict(data=data, layout=layout)
+    fig2d = dict(data=data2d, layout=layout2d)
 
-    iplot(fig)
+    iplot(fig2d)
 
     print(len(scaledDataSet.index), end="")
     print(" instances clustered.")
