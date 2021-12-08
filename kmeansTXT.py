@@ -108,6 +108,7 @@ VID_HEADERS = ['AU01_r', 'AU02_r', 'AU04_r', 'AU05_r', 'AU06_r', 'AU07_r', 'AU09
                'AU05_c', 'AU06_c', 'AU07_c', 'AU09_c', 'AU10_c', 'AU12_c', 'AU14_c', 'AU15_c', 'AU17_c', 'AU20_c',
                'AU23_c', 'AU25_c', 'AU26_c', 'AU28_c', 'AU45_c']
 ALL_HEADERS = TXT_HEADERS + AUD_HEADERS + VID_HEADERS
+TVH = AUD_HEADERS + VID_HEADERS
 
 def getFrames():
     # open each csv and get the final timestamp to get maximum times
@@ -142,7 +143,7 @@ if __name__ == '__main__':
     dataSet = pandas.read_csv("data/output.csv", names=ALL_HEADERS, index_col=False)
 
     #Dropping headers that are not TXT
-    dataSet = dataSet[TXT_HEADERS]
+    dataSet = dataSet[TVH]
 
     # check if any nulls
     #print(dataSet.isnull().sum())
@@ -202,27 +203,27 @@ if __name__ == '__main__':
     #scaledDataSet = dataSet
 
 
-    # determine number of clusters using elbow method
+    #determine number of clusters using elbow method
 
-    # ks = range(1, 15)
-    # inertias = []
-    # for k in ks:
-    #     # Create a KMeans instance with k clusters: model
-    #     model = KMeans(n_clusters=k)
-    #
-    #     # Fit model to samples
-    #     model.fit(scaledDataSet)
-    #
-    #     # Append the inertia to the list of inertias
-    #     inertias.append(model.inertia_)
-    #
-    # plt.plot(ks, inertias, '-o', color='black')
-    # plt.xlabel('number of clusters, k')
-    # plt.ylabel('inertia (SSE)')
-    # plt.title('Inertia v.s Number of Clusters for Text Language Modality')
-    # plt.xticks(ks)
-    #
-    # plt.show()
+    ks = range(1, 15)
+    inertias = []
+    for k in ks:
+        # Create a KMeans instance with k clusters: model
+        model = KMeans(n_clusters=k)
+
+        # Fit model to samples
+        model.fit(scaledDataSet)
+
+        # Append the inertia to the list of inertias
+        inertias.append(model.inertia_)
+
+    plt.plot(ks, inertias, '-o', color='black')
+    plt.xlabel('number of clusters, k')
+    plt.ylabel('inertia (SSE)')
+    plt.title('Inertia v.s Number of Clusters for Text Language Modality')
+    plt.xticks(ks)
+
+    plt.show()
 
     numberClusters = 8
 
